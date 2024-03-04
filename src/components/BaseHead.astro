@@ -23,8 +23,8 @@ const { title, description, image = `${SITE_PIFXY}/blog-placeholder-1.jpg` } = A
 <meta name="generator" content={Astro.generator} />
 
 <!-- Font preloads -->
-<link rel="preload" href="/front-end-docs/fonts/atkinson-regular.woff" as="font" type="font/woff" crossorigin />
-<link rel="preload" href="/front-end-docs/fonts/atkinson-bold.woff" as="font" type="font/woff" crossorigin />
+<link rel="preload" href={`${SITE_PIFXY}/fonts/atkinson-regular.woff`}" as="font" type="font/woff" crossorigin />
+<link rel="preload" href={`${SITE_PIFXY}/fonts/atkinson-bold.woff`}" as="font" type="font/woff" crossorigin />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
