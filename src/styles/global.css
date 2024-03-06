@@ -5,8 +5,8 @@
  */
 
 :root {
-	--accent: #2337ff;
-	--accent-dark: #000d8a;
+	--accent: #000;
+	--accent-dark: #999;
 	--black: 15, 18, 25;
 	--gray: 96, 115, 159;
 	--gray-light: 229, 233, 240;
@@ -79,11 +79,18 @@ b {
 }
 a {
 	color: var(--accent);
+	border-bottom: 1px solid rgba(125, 125, 125, .3);
+	text-decoration: none;
+	line-height: 1.75;
+	transition: all .3s ease;
+	display: inline-block;
 }
 a:hover {
 	color: var(--accent);
+	border-bottom: 1px solid #555;
 }
 p {
+	font-size: 16px;
 	margin-bottom: 1em;
 }
 .prose p {
