@@ -1,5 +1,32 @@
 ---
-import { SITE_PIFXY } from "../consts";
-
-return Astro.redirect(`${ SITE_PIFXY }/home`)
+import HomeLayout from '../layouts/index.astro'
+import { Content as HomePost  } from '../content/home/home.mdx'
+import * as HomePostParams from '../content/home/home.mdx'
 ---
+
+<HomeLayout {...HomePostParams.frontmatter}>
+    <div class="warppar-page">
+        <HomePost />
+    </div>
+</HomeLayout>
+
+<style lang="scss">
+  .warppar-page{
+    padding: 64px;
+    max-width: 65ch;
+    min-height: fit-content;
+    margin: auto;
+  }
+  :global(.text-a) {
+    color: var(--accent);
+    border-bottom: 1px solid rgba(125, 125, 125, .3);
+    text-decoration: none;
+    line-height: 1.75;
+    transition: all .3s ease;
+    display: inline-block;
+  }
+  :global(a:hover) {
+    color: var(--accent);
+    border-bottom: 1px solid #555;
+  }
+</style>
