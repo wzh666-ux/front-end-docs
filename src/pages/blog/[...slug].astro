@@ -1,20 +1,52 @@
 ---
 import { type CollectionEntry, getCollection } from 'astro:content';
-import BlogLayout from '../../layouts/BlogLayout/index.astro';
+import HomeLayout from '../../layouts/index.astro';
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
+	const postsMarkdown = await getCollection('markdown');
+	const postsVue = await getCollection('vue');
+	const postsJenkins = await getCollection('jenkins');
+	const postsDocker = await getCollection('docker');
+	const postsReact = await getCollection('react');
+	return [
+		...postsMarkdown,
+		...postsVue,
+		...postsJenkins,
+		...postsDocker,
+		...postsReact
+	].map((post) => ({
 		params: { slug: post.slug },
 		props: post,
 	}));
 }
-type Props = CollectionEntry<'blog'>;
+type Props = CollectionEntry<'markdown'> & CollectionEntry<'vue'> & CollectionEntry<'jenkins'>;
 
 const post = Astro.props;
 const { Content } = await post.render();
 ---
 
-<BlogLayout {...post.data}>
-	<Content />
-</BlogLayout>
+<HomeLayout {...post.data}>
+	<div class="warppar-page">
+		<Content />
+	</div>
+</HomeLayout>
+
+<style lang="scss">
+	.warppar-page{
+		padding: 64px;
+		max-width: 65ch;
+		margin: auto;
+	}
+	:global(a) {
+		color: var(--accent);
+		border-bottom: 1px solid rgba(125, 125, 125, .3);
+		text-decoration: none;
+		line-height: 1.75;
+		transition: all .3s ease;
+		display: inline-block;
+	}
+	:global(a:hover) {
+		color: var(--accent);
+		border-bottom: 1px solid #555;
+	}
+</style>

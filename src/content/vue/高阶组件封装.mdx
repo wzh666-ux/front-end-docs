@@ -1,0 +1,129 @@
+---
+title: '高阶组件封装'
+description: 'Here is a sample of some basic Markdown syntax that can be used when writing Markdown content in Astro.'
+pubDate: '03 16 2024'
+heroImage: '/blog-placeholder-2.jpg'
+---
+<img src="/front-end-docs/blog-placeholder-2.jpg"/>
+#### 高阶组件的封装
+-------------------------------------------------------------------------------------------------------------------
+##### 一、组件介绍
+高阶组件的含义是：<b>一个函数，传入一个组件参数，返回一个组件, 且这个返回的组件完全带有传入组件的所有性质</b>，这样的函数组件即是高阶组件。
+
+##### 二、常用途径
+如ui框架中注入组件配置的Config Provider相关组件，比如在elementui是el-config-provider，在antd中是a-config-provider，等等。
+编写方式都大同小异，现在每个ui组件中都风靡着各种各样的高阶组件。
+
+##### 三、封装流程
+由于高阶组件使用函数返回组件的模式，所以需要项目原生支持`tsx/jsx`才可以进行，具体项目配置如下：
+1. tsconfig.json
+```
+{
+  "compilerOptions": {
+    ...
+    "jsx": "preserve",
+    /* 开启jsx模板类型引入 */
+    "jsxImportSource": "vue",
+    ...
+  }
+}
+```
+2. vite.config.ts
+```ts
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [vue()],
+  esbuild: {
+    jsxFactory: 'h',
+    jsxFragment: 'Fragment',
+    jsxInject: 'import {h} from "vue";'
+  }
+})
+```
+> 这样配置完成后，我们就可在vue项目中书写tsx/jsx语法，并进行正常的vite编译了。
+
+vue3中高阶组件的抽象封装：
+```tsx
+import {DefineComponent, defineComponent} from "vue";
+export const HocComponent = (WrappedComponent: DefineComponent<any>) => {
+    return defineComponent({
+        data() {
+            return {
+                isLoading: false
+            }
+        },
+        methods: {
+            startLoading() {
+                this.isLoading = true;
+            },
+            finishLoading() {
+                this.isLoading = false;
+            }
+        },
+        render() {
+            return (
+                <WrappedComponent
+                    isLoading={this.isLoading}
+                    startLoading={this.startLoading}
+                    finishLoading={this.finishLoading}
+                />
+            )
+        }
+    })
+}
+```
+
+如何使用高阶组件：
+1. 使用`HocComponent.tsx`实现一个高阶组件。
+```tsx
+import {DefineComponent, defineComponent} from "vue";
+import {HocComponent} from "./index.tsx";
+
+const fetchComponent = defineComponent({
+    props: {
+        isLoading: Boolean,
+        startLoading: Function,
+        finishLoading: Function,
+    },
+    methods: {
+        fetchData() {
+            this.startLoading?.();
+
+            setTimeout(() => {
+                this.finishLoading?.();
+            }, 1000)
+        }
+    },
+    render() {
+        return (
+            <div>
+                <button onClick={this.fetchData}>请求数据</button>
+                {this.isLoading ? <div>请求中...</div> : <div></div>}
+            </div>
+        )
+    }
+}) as DefineComponent
+
+export default HocComponent(fetchComponent)
+```
+2. 在父组件中的运用
+```vue
+<template>
+  <!-- 高阶组件测试 -->
+  <div style="margin-top: 200px;text-align: left">
+    <div>高阶组件案例：</div>
+    <FetchComponent />
+  </div>
+</template>
+
+<script setup lang="ts">
+// 在 Vue3 中使用高阶组件非常简单，只需要将原组件作为参数传入高阶组件函数中，然后将返回的新组件作为渲染的组件即可.
+import FetchComponent from "./components/HocComponent/FetchComponent.tsx";
+</script>
+
+```
+
+<a href="https://gitee.com/hspt_1376355354/knowledge-sharing" target="_blank">您是否想亲自试一试？项目地址在这里!</a>

@@ -1,0 +1,232 @@
+---
+title: '注册器组件封装'
+description: 'Here is a sample of some basic Markdown syntax that can be used when writing Markdown content in Astro.'
+pubDate: '03 16 2024'
+heroImage: '/blog-placeholder-about.jpg'
+---
+<img src="/front-end-docs/blog-placeholder-about.jpg"/>
+#### 注册器组件封装
+-------------------------------------------------------------------------------------------------------------------
+##### 一、组件介绍
+vue中的注册器组件，是vue3下的一种新型的组件封装设计模式。
+
+它的封装与传统组件封装模式产出的组件差别比较大，
+传统组件的封装比较注重vue组件原生`api\组合式api`的使用，比如说：`defineProps`、`defineEmits`、`watch`等，
+主要以实现业务逻辑为主，抽象方法复用的能力较差，即使可以抽象方法实现，也是以函数为单元的抽象方法实现，调用时也与组件关联性较差。
+
+以传统组件封装模式封装的组件，在调用时，也不能很好的解决组件关注点分离的问题，尤其是在组件传参，和组件方法调用时，
+由于传统的组件封装模式要使用父子间组件数据响应式传递，所以一定要先在组件上写标签属性，`ref`等这类东西。
+这些东西在`typescript`语法下，父组件中编写业务逻辑时，无法很好的提供子组件复杂类型中属性提示，而且关联逻辑最后还是要到`typescript`代码块中去处理，
+来回翻动代码编辑器页面，十分的浪费开发业务的时间，需要在开发过程中不停的对照变量和方法是否调错，用错的问题。
+
+为了解决上面的问题，新型的组件封装设计模式，它充分的利用了vue3万物皆可函数的理念，
+可以抽象封装组件中所有的业务逻辑，并且这些业务逻辑还可以差分复用。
+
+由于万物皆可函数的理念，新型的设计模式可以把组件的参数作为函数的变量传递给一个组件函数注册器，通过组件函数注册器中的初始化逻辑中，注册各种子组件中需要使用的业务逻辑`hooks`，
+并从组件函数注册器中返回组件的注册器变量和组件的方法，由于全程在`typescript`语法环境下开发，所以可以清晰在`typescript`语法下提供，
+所有组件可能的方法和变量，通过函数去高度关联了组件的变量和方法，
+而子组件的调用仅仅只需要调用一个子组件的自定义注册事件即可，把所有的组件相关的逻辑都移动到了`typescript`语法环境下，做到了ui和逻辑开发的高度分离。
+##### 二、常用途径
+1. 弹窗组件的封装
+2. 表格组件的封装
+3. 抽屉组件的封装
+##### 三、封装流程
+组件文件结构：
+<img src="/front-end-docs/assets/文件结构.png" />
+
+各个文件内容如下：
+1. /RegistrarComponent/props.ts
+```ts
+    export default {
+        text: '测试注册器组件默认值'
+    }
+```
+2. /RegistrarComponent/index.ts
+```ts
+import component from './src/index.vue'
+import { withComponents } from "../../utils";
+import { RegisterComponentProps } from "./type";
+
+export const RegistrarComponent = withComponents<RegisterComponentProps>(component)
+
+export { useRegistrarComponent } from './hooks/useRegistrarComponent.ts'
+export { type RegisterComponentProps } from './type/index'
+```
+3. /RegistrarComponent/type/index.d.ts
+```ts
+export interface RegisterComponentProps {
+    text?: string
+}
+
+export interface RegisterComponentAction {
+    setProps: (props: RegisterComponentProps) => void
+}
+```
+4. /RegistrarComponent/src/index.vue
+```vue
+<template>
+  <div>
+    <slot></slot>{{ getProps().text }}
+  </div>
+</template>
+<script setup lang="ts">
+import registerComponentProps from "../props.ts";
+import { RegisterComponentProps } from "../type";
+import { useProps } from "../hooks/useProps.ts";
+// 组件内部通过属性注册的props
+const props = withDefaults(defineProps<RegisterComponentProps>(), registerComponentProps)
+const emit = defineEmits(['register'])
+
+// 一定不要在子组件中使用useProps钩子的时候调用setProps方法
+const { getProps } = useProps(props)
+
+// 第一次注册了组件
+emit('register')
+</script>
+```
+5. /RegistrarComponent/hooks/useProps.ts
+```ts
+import { reactive, unref} from "vue";
+import {RegisterComponentProps} from "../type";
+
+const props = reactive<RegisterComponentProps>({})
+export function useProps(_props: RegisterComponentProps) {
+
+    // 获取标签属性值
+    const getProps = () => {
+        return unref(props)
+    }
+
+    // 设置标签属性值
+    const setProps = (valueObj: RegisterComponentProps) => {
+        for (const key in valueObj) {
+            setValue(key, props, getValue(key, valueObj))
+        }
+    }
+
+    // 扩展类型获取值（内部方法）
+    const getValue = (key: string, object: RegisterComponentProps & {[key: string]: any}) => {
+        return object[key]
+    }
+
+    // 扩展类型设置值（内部方法）
+    const setValue = (key: string, object: RegisterComponentProps & {[key: string]: any}, value: any) => {
+        object[key] = value
+    }
+
+    // 初始化标签属性值
+    for (const key in _props) {
+        if(!getValue(key, props) && getValue(key, _props)) {
+            setValue(key, props, getValue(key, _props))
+        }
+    }
+
+    return { getProps, setProps }
+}
+```
+
+6. /RegistrarComponent/hooks/useRegistrarComponent.ts
+```ts
+import { RegisterComponentAction, RegisterComponentProps } from "../type";
+import { useProps } from "./useProps.ts";
+export function useRegistrarComponent(props: RegisterComponentProps): [() => void, RegisterComponentAction] {
+    const { getProps, setProps } = useProps(props)
+
+    // 注册组件函数
+    const register = () => {
+        console.log('组件注册了，初始化入参是 =》', getProps())
+    }
+
+
+    // 子组件的一些向外暴露的方法
+    const componentAction: RegisterComponentAction = {
+        // 获取组件属性
+        setProps
+    }
+
+    return [
+        register,
+        componentAction
+    ]
+}
+
+```
+
+7. withComponents工具
+```ts
+import {App, Component} from "vue";
+
+export function withComponents<P extends Component>(component: Component<P>) {
+    (component as Record<string, unknown>).install = (app: App) => {
+        const compName = component.name;
+        if (!compName) return;
+        app.component(compName, component);
+    };
+    return component;
+}
+
+```
+8. 在父组件中的使用
+```vue
+<template>
+  <!-- 注册器组件测试 text="父组件传入的,根据属性"-->
+  <div style="text-align: left">
+    <div>注册器组件案例：</div>
+    <registrar-component @register="register">
+      <span>当前组件的值是：</span>
+    </registrar-component>
+    <div>
+      <input v-model="parentTextProp">
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {RegistrarComponent, useRegistrarComponent} from './components/RegistrarComponent'
+import {ref, watch} from "vue";
+
+
+const parentTextProp = ref('');
+
+// =======注册器组件注册逻辑（注意通过注册器注册的props优先级大于通过标签属性注册的props）========
+const [register, { setProps }] = useRegistrarComponent({
+  text: '父组件传入的,根据注册器'
+})
+
+watch(parentTextProp, () => {
+  setProps({text: parentTextProp.value})
+})
+</script>
+
+```
+
+<a href="https://gitee.com/hspt_1376355354/knowledge-sharing" target="_blank">您是否想亲自试一试？项目地址在这里!</a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
